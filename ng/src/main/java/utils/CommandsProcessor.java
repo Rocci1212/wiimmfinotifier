@@ -1,35 +1,69 @@
-package discordbot;
+package utils;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import handlers.BotsHandler;
 import handlers.DatabaseHandler;
-import handlers.DiscordBotHandler;
+import handlers.interfaces.BotInterfaceHandler;
+import kernel.BotInterfaces;
 import kernel.Config;
 import kernel.Main;
 import objects.Game;
 import objects.User;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import telegrambot.TelegramBotKeyboards;
 import wiimmfi.GamesListParser;
 
 public class CommandsProcessor {
 	private final static String[] commands = { "infos", "showplayedgames", "followgame", "unfollowgame" };
-	
-	public static String processCommand(User currentUser, String request) {
+
+	public static String processCommandFromTelegram(User currentUser, String request, SendMessage telegramSendMessage) {
+		return processCommand(currentUser, request, BotInterfaces.TELEGRAM, telegramSendMessage);
+	}
+
+	public static String processCommandFromDiscord(User currentUser, String request) {
+		return processCommand(currentUser, request, BotInterfaces.DISCORD, null);
+	}
+
+	private static String processCommand(User currentUser, String request, BotInterfaces botInterface, SendMessage telegramSendMessage) {
 		final String[] args = request.split(" ");
 		final String command = args[0].toLowerCase();
 
+		ReplyKeyboardMarkup telegramReplyKeyboardMarkup = null;
+		final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(botInterface);
 		final StringBuilder answer = new StringBuilder();
 		if (command.equals("infos")) {
-			answer.append("Wiimmfi Notifier for Discord v" + Main.version + "\n");
+			answer.append("Wiimmfi Notifier v" + Main.version + "\n");
 			answer.append("Made with ❤️ by Azlino\n");
-			answer.append("\n***Stats***\n");
+			answer.append("\n");
+			answer.append(botInterfaceHandler.getBoldText("Stats"));
+			answer.append("\n");
 			answer.append("Uptime : " + Main.getUptime() + "\n");
-			answer.append("Total users count : ");
-			answer.append(new CopyOnWriteArrayList<>(DiscordBotHandler.getUsers()).size() + "\n");
+			answer.append("Total users count (Telegram + Discord) : ");
+			answer.append(BotsHandler.getUsers().size() + "\n");
 			answer.append("Number of games list check this session : ");
-			answer.append(Main.checkGamesListCount + "\n");
-			answer.append("\n***Followed games***\n");
-			CopyOnWriteArrayList<String> followedGamesUid = new CopyOnWriteArrayList<>(currentUser.getFollowedGamesUid());
+			answer.append(Main.checkGamesListCount.get() + "\n");
+			final Instant lastGamesListParsingSuccessInstant = GamesListParser.getLastSuccessInstant();
+			answer.append("Last success parsing of games list : ");
+			if (lastGamesListParsingSuccessInstant == null) {
+				answer.append("Never !");
+			} else {
+				DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG).localizedBy(Locale.US);
+				answer.append(formatter.format(ZonedDateTime.ofInstant(lastGamesListParsingSuccessInstant, ZoneId.systemDefault())));
+			}
+			answer.append("\n\n");
+			answer.append(botInterfaceHandler.getBoldText("Followed games"));
+			answer.append("\n");
+			List<String> followedGamesUid = new CopyOnWriteArrayList<>(currentUser.getFollowedGamesUid());
 			if (followedGamesUid.isEmpty()) {
 				answer.append("You don't follow any games");
 			} else {
@@ -42,8 +76,8 @@ public class CommandsProcessor {
 				}
 			}
 		} else if (command.equals("showplayedgames")) {
-			ArrayList<Game> playedGames = new ArrayList<>();
-			for (Game game : new CopyOnWriteArrayList<>(GamesListParser.getGames())) {
+			List<Game> playedGames = new ArrayList<>();
+			for (Game game : GamesListParser.getGames()) {
 				if (game.getOnlineCount() > 0) {
 					playedGames.add(game);
 				}
@@ -51,14 +85,14 @@ public class CommandsProcessor {
 			if (playedGames.isEmpty()) {
 				answer.append("No games are currently played on Wiimmfi !");
 			} else {
-				answer.append("***Currently played games on Wiimmfi***");
+				answer.append(botInterfaceHandler.getBoldText("Currently played games on Wiimmfi"));
 				for (Game game : playedGames) {
 					answer.append("\n- " + game.getType() + " " + game.getProductionName());
 					answer.append(" (" + game.getOnlineCount() + " online)");
 				}
 			}
 		} else if (command.equals("followgame")) {
-			ArrayList<Game> notFollowedGames = currentUser.getNotFollowedGames();
+			List<Game> notFollowedGames = currentUser.getNotFollowedGames();
 			if (notFollowedGames.isEmpty()) {
 				answer.append("Error : You are following already all games !");
 			} else {
@@ -68,7 +102,7 @@ public class CommandsProcessor {
 						for (Game notFollowedGame : notFollowedGames) {
 							if (!currentUser.getFollowedGamesUid().contains(notFollowedGame.getUniqueId())) {
 								currentUser.getFollowedGamesUid().add(notFollowedGame.getUniqueId());
-								DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), notFollowedGame.getUniqueId());
+								DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), notFollowedGame.getUniqueId(), botInterface);
 							}
 						}
 						answer.append("You are now following the activity of all Wiimmfi games !");
@@ -80,7 +114,7 @@ public class CommandsProcessor {
 						}
 						if (!currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
 							currentUser.getFollowedGamesUid().add(game.getUniqueId());
-							DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), game.getUniqueId());
+							DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
 							answer.append("You are now following the activity of the game : " + game.getProductionName());
 							Main.printNewEvent("User " + currentUser.getUserId() + " follow " + game.getUniqueId(), true);
 						} else {
@@ -95,7 +129,7 @@ public class CommandsProcessor {
 				}
 			}
 		} else if (command.equals("unfollowgame")) {
-			ArrayList<Game> followedGames = currentUser.getFollowedGames();
+			List<Game> followedGames = currentUser.getFollowedGames();
 			if (followedGames.isEmpty()) {
 				answer.append("Error : You are not following any games !");
 			} else {
@@ -104,7 +138,7 @@ public class CommandsProcessor {
 					if (args[1].equals("all")) {
 						currentUser.getFollowedGamesUid().clear();
 						for (Game followedGame : followedGames) {
-							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), followedGame.getUniqueId());
+							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), followedGame.getUniqueId(), botInterface);
 						}
 						answer.append("You are not following the activity of any games anymore");
 						Main.printNewEvent("User " + currentUser.getUserId() + " unfollow all games", true);
@@ -115,7 +149,7 @@ public class CommandsProcessor {
 						}
 						if (currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
 							currentUser.getFollowedGamesUid().remove(game.getUniqueId());
-							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), game.getUniqueId());
+							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
 							answer.append("You are not following anymore the activity of the game : " + game.getProductionName());
 							Main.printNewEvent("User " + currentUser.getUserId() + " unfollow " + game.getUniqueId(), true);
 						} else {
@@ -130,15 +164,22 @@ public class CommandsProcessor {
 				}
 			}
 		} else {
-			answer.append("***Available commands***");
+			answer.append(botInterfaceHandler.getBoldText("Available commands"));
 			for (String availableCommand : getCommands()) {
 				answer.append("\n" + availableCommand);
 			}
+			telegramReplyKeyboardMarkup = TelegramBotKeyboards.getCommandsKeyboard();
 		}
 		if (answer.length() == 0) {
 			return null;
 		} else {
-			return answer.toString();
+			final String answerText = answer.toString();
+			if (telegramSendMessage != null) {
+				if (telegramReplyKeyboardMarkup != null) {
+					telegramSendMessage.setReplyMarkup(telegramReplyKeyboardMarkup);
+				}
+			}
+			return answerText;
 		}
 	}
 

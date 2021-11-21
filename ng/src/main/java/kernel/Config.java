@@ -7,15 +7,24 @@ public class Config {
 	// Main
 	public static boolean debug;
 	public static String discordBotToken = "";
+	public static String telegramBotToken = "";
 	// Database
-	public static String dbName = "wiimmfinotifier", dbHost = "127.0.0.1", dbUser = "root", dbPass = "";
+	public static String dbNameTelegram = "", dbNameDiscord = "", dbHost = "127.0.0.1", dbUser = "root", dbPass = "";
 	// Parsing
+	public static int gamesListParsingSecondsInterval = 60;
 	public static String wiimmfiBaseUrl = null;
 	public static String wiimmfiFullGamesListPath;
 	public static String wiimmfiNDSTypeImagePath;
 	public static String wiimmfiDSIWARETypeImagePath;
 	public static String wiimmfiWIITypeImagePath;
 	public static String wiimmfiWIIWARETypeImagePath;
+	// Bypass CloudFlare
+	public static boolean useFlareSolverr = false;
+	public static String flareSolverrUrl = "";
+	public static String flareSolverrSession = "";
+	// API specifications
+	public static int discordMaxMessageLength = 2000;
+	public static int telegramMaxMessageLength = 4096;
 
 	public static boolean load() {
 
@@ -33,10 +42,26 @@ public class Config {
 				}
 				if (param.equalsIgnoreCase("DEBUG") && value.equalsIgnoreCase("true")) {
 					Config.debug = true;
-				} else if (param.equalsIgnoreCase("DISCORDBOT_TOKEN")) {
+				} else if (param.equalsIgnoreCase("USE_FLARE_SOLVERR") && value.equalsIgnoreCase("true")) {
+					Config.useFlareSolverr = true;
+				} else if (param.equalsIgnoreCase("FLARE_SOLVERR_URL")) {
+					Config.flareSolverrUrl = value;
+				} else if (param.equalsIgnoreCase("FLARE_SOLVERR_SESSION")) {
+					Config.flareSolverrSession = value;
+				} else if (param.equalsIgnoreCase("GAMES_LIST_PARSING_SECONDS_INTERVAL")) {
+					Config.gamesListParsingSecondsInterval = Integer.parseInt(value);
+				} else if (param.equalsIgnoreCase("MAX_MESSAGE_LENGTH_DISCORD")) {
+					Config.discordMaxMessageLength = Integer.parseInt(value);
+				} else if (param.equalsIgnoreCase("MAX_MESSAGE_LENGTH_TELEGRAM")) {
+					Config.telegramMaxMessageLength = Integer.parseInt(value);
+				} else if (param.equalsIgnoreCase("BOT_TOKEN_DISCORD")) {
 					Config.discordBotToken = value;
-				} else if (param.equalsIgnoreCase("DB_NAME")) {
-					Config.dbName = value;
+				} else if (param.equalsIgnoreCase("BOT_TOKEN_TELEGRAM")) {
+					Config.telegramBotToken = value;
+				} else if (param.equalsIgnoreCase("DB_NAME_DISCORD")) {
+					Config.dbNameDiscord = value;
+				} else if (param.equalsIgnoreCase("DB_NAME_TELEGRAM")) {
+					Config.dbNameTelegram = value;
 				} else if (param.equalsIgnoreCase("DB_HOST")) {
 					Config.dbHost = value;
 				} else if (param.equalsIgnoreCase("DB_USER")) {
@@ -71,7 +96,7 @@ public class Config {
 					}
 					Config.wiimmfiWIIWARETypeImagePath = value;
 			}
-			if (Config.dbName == null || Config.dbHost == null || Config.dbPass == null || Config.dbUser == null) {
+			if (Config.dbNameDiscord == null || Config.dbNameTelegram == null || Config.dbHost == null || Config.dbPass == null || Config.dbUser == null) {
 				throw new Exception();
 			}
 		}

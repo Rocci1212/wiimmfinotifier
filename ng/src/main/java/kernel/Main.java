@@ -2,17 +2,19 @@ package kernel;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
+import handlers.BotsHandler;
 import handlers.DatabaseHandler;
-import handlers.DiscordBotHandler;
 import wiimmfi.GamesListParser;
 
 public class Main {
 	private static Thread checkGamesListTask;
 	private static long startTime;
 	private volatile static boolean running;
-	public volatile static long checkGamesListCount = 0;
-	public static String version = "1.0.5";
+	public static AtomicLong checkGamesListCount = new AtomicLong(0);
+	public static String version = "2.0";
 	
 	public static void main(String[] args) {
 		setRunning(true);
@@ -23,13 +25,17 @@ public class Main {
 			Main.printNewEvent("Configuration file loading failed", false);
 			System.exit(1);
 		}
-		if (DatabaseHandler.setUpConnexion()) {
-		} else {
-			System.exit(1);
+		for (final BotInterfaces botInterface : BotInterfaces.values()) {
+			Main.printNewEvent("Load " + botInterface.name() + " bot interface database", false);
+			if (DatabaseHandler.setUpConnexion(botInterface)) {
+
+			} else {
+				System.exit(1);
+			}
+			DatabaseHandler.loadUsers(botInterface);
+			DatabaseHandler.loadUsersFollowedGames(botInterface);
 		}
-		DatabaseHandler.loadUsers();
-		DatabaseHandler.loadUsersFollowedGames();
-		DiscordBotHandler.launch();
+		BotsHandler.launchBotInterfaces();
 		Main.launchCheckGamesListTask();
 		Runtime.getRuntime().addShutdownHook(new Thread()
 		{
@@ -40,12 +46,12 @@ public class Main {
 		    	Main.setRunning(false);
 		    }
 		});
-		System.out.println("Wiimmfi notifier discord is ready !");
+		System.out.println("Wiimmfi notifier is ready !");
 		startTime = System.currentTimeMillis();
 	}
 	
 	public static void header() {
-		System.out.print("			Wiimmfi Notifier for Discord\n");
+		System.out.print("			Wiimmfi Notifier\n");
 		System.out.print("			Version : ");
 		System.out.print(Main.version + "\n");
 		System.out.print("			by Azlino\n");
@@ -76,14 +82,15 @@ public class Main {
 						Main.printNewEvent("Check games list task started", true);
 			        	try {
 							GamesListParser.parseWiimmfiGamesList();
-				        	GamesListParser.warnUsers();
+							GamesListParser.warnUsers();
 				        	GamesListParser.gamesFinishedActivityWarning();
-				        	checkGamesListCount++;
+				        	checkGamesListCount.incrementAndGet();
+							Main.printNewEvent("Check games list task finished", true);
 						} catch (IOException e) {
 							e.printStackTrace();
+							Main.printNewEvent("Check games list task failed", true);
 						}
-			        	Main.printNewEvent("Check games list task finished", true);
-			        	Thread.sleep(60000); // 1 min
+			        	Thread.sleep(TimeUnit.SECONDS.toMillis(Config.gamesListParsingSecondsInterval));
 					}
 				} catch (final InterruptedException e) {
 				}

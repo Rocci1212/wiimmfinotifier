@@ -1,27 +1,25 @@
 package handlers;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.EnumMap;
+import java.util.Map;
 
+import kernel.BotInterfaces;
 import kernel.Config;
 import kernel.Main;
 import objects.User;
 
 public class DatabaseHandler {
-	private static Connection connection;
+	private static Map<BotInterfaces, Connection> connections = new EnumMap<>(BotInterfaces.class);
 
-	public synchronized static void loadUsers() {
+	public synchronized static void loadUsers(BotInterfaces botInterface) {
 		int i = 0;
 		try {
 			final String query = "SELECT * FROM `users`;";
-			final ResultSet resultset = DatabaseHandler.executeQuery(query);
+			final ResultSet resultset = DatabaseHandler.executeQuery(query, botInterface);
 			while (resultset.next()) {
-				User user = new User(resultset.getLong("userId"));
-				DiscordBotHandler.getUsers().add(user);
+				User user = new User(resultset.getLong("userId"), botInterface);
+				BotsHandler.getUsers().add(user);
 				i++;
 			}
 			DatabaseHandler.closeResultSet(resultset);
@@ -31,13 +29,13 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static void loadUsersFollowedGames() {
+	public synchronized static void loadUsersFollowedGames(BotInterfaces botInterface) {
 		int i = 0;
 		try {
 			final String query = "SELECT * FROM `users_followedgames`;";
-			final ResultSet resultset = DatabaseHandler.executeQuery(query);
+			final ResultSet resultset = DatabaseHandler.executeQuery(query, botInterface);
 			while (resultset.next()) {
-				User user = DiscordBotHandler.getUser(resultset.getLong("userId"));
+				User user = BotsHandler.getUser(resultset.getLong("userId"), botInterface);
 				if (user != null) {
 					user.getFollowedGamesUid().add(resultset.getString("gameUid"));
 					i++;
@@ -50,10 +48,10 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static void addUser(long userId) {
+	public synchronized static void addUser(long userId, BotInterfaces botInterface) {
 		final String query = "INSERT INTO `users` VALUES (?);";
 		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query);
+			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
 			p.setLong(1, userId);
 			p.execute();
 			DatabaseHandler.closePreparedStatement(p);
@@ -62,10 +60,10 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static void addUserFollowedGame(long userId, String gameId) {
+	public synchronized static void addUserFollowedGame(long userId, String gameId, BotInterfaces botInterface) {
 		final String query = "INSERT INTO `users_followedgames` VALUES (?,?);";
 		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query);
+			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
 			p.setLong(1, userId);
 			p.setString(2, gameId);
 			p.execute();
@@ -75,10 +73,10 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static void deleteUserFollowedGame(long userId, String gameId) {
+	public synchronized static void deleteUserFollowedGame(long userId, String gameId, BotInterfaces botInterface) {
 		final String query = "DELETE FROM `users_followedgames` WHERE userId = ? AND gameUid = ?";
 		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query);
+			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
 			p.setLong(1, userId);
 			p.setString(2, gameId);
 			p.execute();
@@ -88,17 +86,9 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static PreparedStatement newTransact(String basequery) throws SQLException {
-		checkConnection();
-		return DatabaseHandler.connection.prepareStatement(basequery);
-	}
-
-	public synchronized static void closeCons() {
-		try {
-			DatabaseHandler.connection.close();
-		} catch (final Exception e) {
-			System.err.println("SQL Exception " + e.getMessage());
-		}
+	public synchronized static PreparedStatement newTransact(String basequery, BotInterfaces botInterface) throws SQLException {
+		checkConnection(botInterface);
+		return getConnection(botInterface).prepareStatement(basequery);
 	}
 
 	public synchronized static void closePreparedStatement(PreparedStatement p) {
@@ -119,10 +109,10 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static ResultSet executeQuery(String query) {
-		checkConnection();
+	public synchronized static ResultSet executeQuery(String query, BotInterfaces botInterface) {
+		checkConnection(botInterface);
 		try {
-			Statement stat = DatabaseHandler.connection.createStatement();
+			Statement stat = getConnection(botInterface).createStatement();
 			final ResultSet resultSet = stat.executeQuery(query);
 			stat.setQueryTimeout(20);
 			return resultSet;
@@ -132,15 +122,15 @@ public class DatabaseHandler {
 		return null;
 	}
 	
-	public synchronized static void checkConnection() {
+	public synchronized static void checkConnection(BotInterfaces botInterface) {
 		while (true) {
 			try {
-				if (!DatabaseHandler.connection.isValid(1000)) throw new SQLException();
+				if (!getConnection(botInterface).isValid(1000)) throw new SQLException();
 			} catch (SQLException e1) {
 				Main.printNewEvent("Database connection has been lost, auto reconnecting in 1s", false);
 				try {
 					Thread.sleep(1000);
-					if (!setUpConnexion()) { // Reconnect
+					if (!setUpConnexion(botInterface)) { // Reconnect
 						// Failed
 						continue;
 					}
@@ -152,14 +142,16 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public synchronized static final boolean setUpConnexion() {
+	public synchronized static boolean setUpConnexion(final BotInterfaces botInterface) {
 		try {
-			DatabaseHandler.connection = DriverManager.getConnection("jdbc:mysql://" + Config.dbHost + "/" + Config.dbName, Config.dbUser, Config.dbPass);
-			DatabaseHandler.connection.setAutoCommit(true);
-			if (!DatabaseHandler.connection.isValid(1000)) {
+			final String dbName = botInterface == BotInterfaces.DISCORD ? Config.dbNameDiscord : Config.dbNameTelegram;
+			final Connection connection = DriverManager.getConnection("jdbc:mysql://" + Config.dbHost + "/" + dbName, Config.dbUser, Config.dbPass);
+			connection.setAutoCommit(true);
+			if (!connection.isValid(1000)) {
 				Main.printNewEvent("Connection to the database : failed (invalid)", false);
 				return false;
 			}
+			connections.put(botInterface, connection);
 			Main.printNewEvent("Connection to the database : ok", false);
 			return true;
 		} catch (final SQLException e) {
@@ -168,7 +160,7 @@ public class DatabaseHandler {
 		}
 	}
 	
-	public static Connection getConnection() {
-		return connection;
+	public static Connection getConnection(BotInterfaces botInterface) {
+		return connections.get(botInterface);
 	}
 }

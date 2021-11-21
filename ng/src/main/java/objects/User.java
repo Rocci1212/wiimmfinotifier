@@ -1,28 +1,28 @@
 package objects;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import kernel.BotInterfaces;
 import wiimmfi.GamesListParser;
 
 public class User {
-	private long userId;
-	private CopyOnWriteArrayList<String> followedGamesUid = new CopyOnWriteArrayList<>();
+	private final long userId;
+	private final List<String> followedGamesUid = new CopyOnWriteArrayList<>();
+	private final BotInterfaces botInterface;
 
-	public User(long userId) {
-		setUserId(userId);
+	public User(long userId, BotInterfaces botInterface) {
+		this.userId = userId;
+		this.botInterface = botInterface;
 	}
 
 	public long getUserId() {
 		return userId;
 	}
 
-	public void setUserId(long userId) {
-		this.userId = userId;
-	}
-	
 	public boolean isGameFollowed(String gameUniqueId) {
-		for (String uId : new CopyOnWriteArrayList<>(getFollowedGamesUid())) {
+		for (String uId : getFollowedGamesUid()) {
 			if (uId.equals(gameUniqueId)) {
 				return true;
 			}
@@ -30,9 +30,9 @@ public class User {
 		return false;
 	}
 	
-	public ArrayList<Game> getNotFollowedGames() {
-		ArrayList<Game> notFollowedGames = new ArrayList<>();
-		for (Game game : new CopyOnWriteArrayList<>(GamesListParser.getGames())) {
+	public List<Game> getNotFollowedGames() {
+		List<Game> notFollowedGames = new ArrayList<>();
+		for (Game game : GamesListParser.getGames()) {
 			if (!isGameFollowed(game.getUniqueId())) {
 				notFollowedGames.add(game);
 			}
@@ -40,9 +40,9 @@ public class User {
 		return notFollowedGames;
 	}
 	
-	public ArrayList<Game> getFollowedGames() {
-		ArrayList<Game> followedGames = new ArrayList<>();
-		for (Game game : new CopyOnWriteArrayList<>(GamesListParser.getGames())) {
+	public List<Game> getFollowedGames() {
+		List<Game> followedGames = new ArrayList<>();
+		for (Game game : GamesListParser.getGames()) {
 			if (isGameFollowed(game.getUniqueId())) {
 				followedGames.add(game);
 			}
@@ -50,11 +50,11 @@ public class User {
 		return followedGames;
 	}
 	
-	public CopyOnWriteArrayList<String> getFollowedGamesUid() {
+	public List<String> getFollowedGamesUid() {
 		return followedGamesUid;
 	}
 
-	public void setFollowedGamesUid(CopyOnWriteArrayList<String> followedGamesUid) {
-		this.followedGamesUid = followedGamesUid;
+	public BotInterfaces getBotInterface() {
+		return botInterface;
 	}
 }

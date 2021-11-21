@@ -1,38 +1,54 @@
 package wiimmfi;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import handlers.BotsHandler;
+import handlers.interfaces.BotInterfaceHandler;
+import kernel.Config;
+import kernel.Main;
+import objects.Game;
+import objects.User;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import handlers.DiscordBotHandler;
-import kernel.Config;
-import kernel.Main;
-import objects.Game;
-import objects.User;
-
 public class GamesListParser {
-	private static CopyOnWriteArrayList<Game> games = new CopyOnWriteArrayList<>();
-	
+	private static final List<Game> games = new CopyOnWriteArrayList<>();
+	private static Instant lastSuccessInstant = null;
+
+	public static Instant getLastSuccessInstant() {
+		return lastSuccessInstant;
+	}
+
 	public static Game getGameByUniqueId(String uniqueId) {
-		for (Game game : new CopyOnWriteArrayList<>(getGames())) {
+		for (Game game : getGames()) {
 			if (game.getUniqueId().equals(uniqueId)) {
 				return game;
 			}
+
 		}
 		return null;
 	}
 	
-	public static CopyOnWriteArrayList<Game> getGames() {
+	public static List<Game> getGames() {
 		return games;
 	}
 	
 	public static void warnUsers() {
-		for (User user : new CopyOnWriteArrayList<>(DiscordBotHandler.getUsers())) {
+		for (User user : BotsHandler.getUsers()) {
 			StringBuilder notificationBuilder = new StringBuilder();
 			for (Game game : getGames()) {
 				if (user.isGameFollowed(game.getUniqueId())) {
@@ -50,7 +66,8 @@ public class GamesListParser {
 				}
 			}
 			if (notificationBuilder.length() > 0) {
-				DiscordBotHandler.sendTo(user.getUserId(), notificationBuilder.substring(1));
+				final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(user.getBotInterface());
+				botInterfaceHandler.sendTo(user.getUserId(), notificationBuilder.substring(1));
 			}
 		}
 	}
@@ -60,11 +77,49 @@ public class GamesListParser {
 			game.setWarnPlayingActivity((short) 0);
 		}
 	}
-	
-	public static void parseWiimmfiGamesList() throws IOException {
-		final Connection connection = Jsoup.connect(Config.wiimmfiFullGamesListPath);
-		connection.userAgent("Wiimmfi Notifier by Azlino v" + Main.version);
-		Document doc = connection.get();
+
+	public static Document accessWiimmfiUsingFlareSolverr() throws IOException, InterruptedException {
+		var values = new HashMap<String, String>() {{
+			put("cmd", "request.get");
+			put("url", Config.wiimmfiFullGamesListPath);
+			put("session", Config.flareSolverrSession);
+		}};
+		var objectMapper = new ObjectMapper();
+		final String requestBody = objectMapper
+				.writeValueAsString(values);
+
+		HttpClient client = HttpClient.newHttpClient();
+		HttpRequest request = HttpRequest.newBuilder()
+				.header("Content-Type", "application/json")
+				.uri(URI.create(Config.flareSolverrUrl))
+				.POST(HttpRequest.BodyPublishers.ofString(requestBody))
+				.build();
+
+		HttpResponse<String> response = client.send(request,
+				HttpResponse.BodyHandlers.ofString());
+
+		JsonObject jsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
+		if (!jsonObject.get("status").getAsString().equalsIgnoreCase("ok")) {
+			return null;
+		}
+		final Document doc = Jsoup.parse(jsonObject.get("solution").getAsJsonObject().get("response").getAsString());
+		doc.setBaseUri(Config.wiimmfiBaseUrl);
+		return doc;
+	}
+
+	public static void parseWiimmfiGamesList() throws IOException, InterruptedException {
+		final Document doc;
+		if (Config.useFlareSolverr) {
+			doc = accessWiimmfiUsingFlareSolverr();
+		} else {
+			// Accès direct
+			final Connection connection = Jsoup.connect(Config.wiimmfiFullGamesListPath);
+			connection.userAgent("Wiimmfi Notifier by Azlino v" + Main.version);
+			doc = connection.get();
+		}
+		if (doc == null) {
+			return;
+		}
 		Element table = doc.getElementById("game");
 		Elements rows = table.select("tr");
 		for (int i = 2; i < rows.size() - 1; i++) {
@@ -104,5 +159,6 @@ public class GamesListParser {
 			    getGames().add(game);
 		    }
 		}
+		lastSuccessInstant = Instant.now();
 	}
 }
