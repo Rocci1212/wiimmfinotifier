@@ -51,7 +51,9 @@ public class CommandsProcessor {
 			answer.append("Total users count (Telegram + Discord) : ");
 			answer.append(BotsHandler.getUsers().size() + "\n");
 			answer.append("Number of games list check this session : ");
-			answer.append(Main.checkGamesListCount.get() + "\n");
+			answer.append(Stats.checkGamesListCount.get() + "\n");
+			answer.append("Number of notifications delivered this session : ");
+			answer.append(Stats.notificationsIssuedCount.get() + "\n");
 			final Instant lastGamesListParsingSuccessInstant = GamesListParser.getLastSuccessInstant();
 			answer.append("Last success parsing of games list : ");
 			if (lastGamesListParsingSuccessInstant == null) {

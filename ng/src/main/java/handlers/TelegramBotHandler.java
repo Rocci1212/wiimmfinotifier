@@ -1,5 +1,7 @@
 package handlers;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import handlers.interfaces.BotInterfaceHandler;
 import kernel.Config;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
@@ -8,6 +10,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import telegrambot.TelegramBot;
 import utils.MessagesSplitter;
+import utils.Stats;
 
 public class TelegramBotHandler implements BotInterfaceHandler {
 	public static TelegramBotHandler instance = new TelegramBotHandler();
@@ -43,11 +46,12 @@ public class TelegramBotHandler implements BotInterfaceHandler {
 	}
 
 	@Override
-	public void sendTo(long chatId, String message) {
+	public void sendNotification(long chatId, String message) {
 		final TelegramBot telegramBot = getTelegramBot();
 		if (telegramBot == null) {
 			return;
 		}
+		final AtomicBoolean notified = new AtomicBoolean(false);
 		for (final String maxPossibleSizeMessage : MessagesSplitter.getMaximumPossibleSizeSplittedMessagesList(message, Config.telegramMaxMessageLength)) {
 			// Create a message object
 			final SendMessage sendMessage = new SendMessage();
@@ -57,6 +61,10 @@ public class TelegramBotHandler implements BotInterfaceHandler {
 				telegramBot.executeAsync(sendMessage).exceptionally((e) -> {
 					System.err.println(e.getMessage());
 					return null;
+				}).whenComplete((m, t) -> {
+					if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
+						Stats.notificationsIssuedCount.incrementAndGet();
+					}
 				});
 			} catch (final TelegramApiException e) {
 				System.err.println(e.getMessage());

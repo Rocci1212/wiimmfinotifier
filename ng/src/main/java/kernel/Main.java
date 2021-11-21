@@ -3,18 +3,17 @@ package kernel;
 import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import handlers.BotsHandler;
 import handlers.DatabaseHandler;
+import utils.Stats;
 import wiimmfi.GamesListParser;
 
 public class Main {
 	private static Thread checkGamesListTask;
 	private static long startTime;
 	private volatile static boolean running;
-	public static AtomicLong checkGamesListCount = new AtomicLong(0);
-	public static String version = "2.0";
+	public static String version = "2.0.1";
 	
 	public static void main(String[] args) {
 		setRunning(true);
@@ -84,7 +83,7 @@ public class Main {
 							GamesListParser.parseWiimmfiGamesList();
 							GamesListParser.warnUsers();
 				        	GamesListParser.gamesFinishedActivityWarning();
-				        	checkGamesListCount.incrementAndGet();
+				        	Stats.checkGamesListCount.incrementAndGet();
 							Main.printNewEvent("Check games list task finished", true);
 						} catch (IOException e) {
 							e.printStackTrace();

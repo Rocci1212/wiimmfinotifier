@@ -67,7 +67,7 @@ public class GamesListParser {
 			}
 			if (notificationBuilder.length() > 0) {
 				final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(user.getBotInterface());
-				botInterfaceHandler.sendTo(user.getUserId(), notificationBuilder.substring(1));
+				botInterfaceHandler.sendNotification(user.getUserId(), notificationBuilder.substring(1));
 			}
 		}
 	}

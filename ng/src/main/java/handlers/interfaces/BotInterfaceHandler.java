@@ -1,7 +1,7 @@
 package handlers.interfaces;
 
 public interface BotInterfaceHandler {
-    void sendTo(long chatId, String message);
+    void sendNotification(long chatId, String message);
 
     void launch();
 

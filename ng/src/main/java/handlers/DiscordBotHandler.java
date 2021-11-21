@@ -1,11 +1,14 @@
 package handlers;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import handlers.interfaces.BotInterfaceHandler;
 import kernel.Config;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.exceptions.ErrorHandler;
 import net.dv8tion.jda.api.requests.ErrorResponse;
 import utils.MessagesSplitter;
+import utils.Stats;
 
 public class DiscordBotHandler implements BotInterfaceHandler {
 	public static DiscordBotHandler instance = new DiscordBotHandler();
@@ -13,16 +16,21 @@ public class DiscordBotHandler implements BotInterfaceHandler {
 	private Thread discordBotThread;
 
 	@Override
-	public void sendTo(long userId, String message) {
+	public void sendNotification(long userId, String message) {
 		final JDA discordBot = getDiscordBot();
 		if (discordBot == null) {
 			return;
 		}
+		final AtomicBoolean notified = new AtomicBoolean(false);
 		for (final String maxPossibleSizeMessage : MessagesSplitter.getMaximumPossibleSizeSplittedMessagesList(message, Config.discordMaxMessageLength)) {
 			net.dv8tion.jda.api.entities.User user = discordBot.getUserById(userId);
 			if (user != null) {
 				user.openPrivateChannel().queue((channel) -> {
-					channel.sendMessage(maxPossibleSizeMessage).queue(null, new ErrorHandler().ignore(ErrorResponse.CANNOT_SEND_TO_USER));
+					channel.sendMessage(maxPossibleSizeMessage).queue((m) -> {
+							if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
+								Stats.notificationsIssuedCount.incrementAndGet();
+							}
+						}, new ErrorHandler().ignore(ErrorResponse.CANNOT_SEND_TO_USER));
 				});
 			}
 		}
