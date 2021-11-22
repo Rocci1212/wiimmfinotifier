@@ -99,7 +99,9 @@ public class GamesListParser {
 				HttpResponse.BodyHandlers.ofString());
 
 		JsonObject jsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
-		if (!jsonObject.get("status").getAsString().equalsIgnoreCase("ok")) {
+		final String status = jsonObject.get("status").getAsString();
+		if (!status.equalsIgnoreCase("ok")) {
+			System.err.println("[FlareSolverr] Received status different from ok. Status : " + status);
 			return null;
 		}
 		final Document doc = Jsoup.parse(jsonObject.get("solution").getAsJsonObject().get("response").getAsString());
