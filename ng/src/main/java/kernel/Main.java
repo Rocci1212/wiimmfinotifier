@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
+import exceptions.FlareSolverrException;
 import handlers.BotsHandler;
 import handlers.DatabaseHandler;
 import utils.Stats;
+import wiimmfi.FlareSolverrGatewayManager;
 import wiimmfi.GamesListParser;
 
 public class Main {
@@ -88,6 +90,16 @@ public class Main {
 						} catch (IOException e) {
 							e.printStackTrace();
 							Main.printNewEvent("Check games list task failed", true);
+							if (e instanceof FlareSolverrException) {
+								try {
+									Main.printNewEvent("An error occured from FlareSolverr, let's ask browser session re-creation", false);
+									FlareSolverrGatewayManager.instance.recreateBrowserSession();
+									Main.printNewEvent("Browser session re-creation : success", false);
+								} catch (IOException ex) {
+									ex.printStackTrace();
+									Main.printNewEvent("Browser session re-creation : failure", false);
+								}
+							}
 						}
 			        	Thread.sleep(TimeUnit.SECONDS.toMillis(Config.gamesListParsingSecondsInterval));
 					}

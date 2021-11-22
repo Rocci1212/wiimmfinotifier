@@ -17,6 +17,9 @@ public class TelegramBotHandler implements BotInterfaceHandler {
 	private TelegramBot telegramBot = null;
 	private Thread telegramBotThread;
 
+	private TelegramBotHandler() {
+	}
+
 	@Override
 	public void launch() {
 		if (this.telegramBotThread != null && this.telegramBotThread.isAlive()) {

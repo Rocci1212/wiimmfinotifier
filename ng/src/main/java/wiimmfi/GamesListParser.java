@@ -1,18 +1,10 @@
 package wiimmfi;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import handlers.BotsHandler;
 import handlers.interfaces.BotInterfaceHandler;
 import kernel.Config;
@@ -78,41 +70,10 @@ public class GamesListParser {
 		}
 	}
 
-	public static Document accessWiimmfiUsingFlareSolverr() throws IOException, InterruptedException {
-		var values = new HashMap<String, String>() {{
-			put("cmd", "request.get");
-			put("url", Config.wiimmfiFullGamesListPath);
-			put("session", Config.flareSolverrSession);
-		}};
-		var objectMapper = new ObjectMapper();
-		final String requestBody = objectMapper
-				.writeValueAsString(values);
-
-		HttpClient client = HttpClient.newHttpClient();
-		HttpRequest request = HttpRequest.newBuilder()
-				.header("Content-Type", "application/json")
-				.uri(URI.create(Config.flareSolverrUrl))
-				.POST(HttpRequest.BodyPublishers.ofString(requestBody))
-				.build();
-
-		HttpResponse<String> response = client.send(request,
-				HttpResponse.BodyHandlers.ofString());
-
-		JsonObject jsonObject = JsonParser.parseString(response.body()).getAsJsonObject();
-		final String status = jsonObject.get("status").getAsString();
-		if (!status.equalsIgnoreCase("ok")) {
-			System.err.println("[FlareSolverr] Received status different from ok. Status : " + status);
-			return null;
-		}
-		final Document doc = Jsoup.parse(jsonObject.get("solution").getAsJsonObject().get("response").getAsString());
-		doc.setBaseUri(Config.wiimmfiBaseUrl);
-		return doc;
-	}
-
 	public static void parseWiimmfiGamesList() throws IOException, InterruptedException {
 		final Document doc;
 		if (Config.useFlareSolverr) {
-			doc = accessWiimmfiUsingFlareSolverr();
+			doc = FlareSolverrGatewayManager.instance.accessWiimmfiUsingFlareSolverr();
 		} else {
 			// Accès direct
 			final Connection connection = Jsoup.connect(Config.wiimmfiFullGamesListPath);

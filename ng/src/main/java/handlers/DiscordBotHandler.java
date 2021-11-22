@@ -15,6 +15,9 @@ public class DiscordBotHandler implements BotInterfaceHandler {
 	private JDA discordBot = null;
 	private Thread discordBotThread;
 
+	private DiscordBotHandler() {
+	}
+
 	@Override
 	public void sendNotification(long userId, String message) {
 		final JDA discordBot = getDiscordBot();
