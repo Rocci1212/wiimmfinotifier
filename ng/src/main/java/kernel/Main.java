@@ -15,7 +15,7 @@ public class Main {
 	private static Thread checkGamesListTask;
 	private static long startTime;
 	private volatile static boolean running;
-	public static String version = "2.0.3";
+	public static String version = "2.0.4";
 	
 	public static void main(String[] args) {
 		setRunning(true);
