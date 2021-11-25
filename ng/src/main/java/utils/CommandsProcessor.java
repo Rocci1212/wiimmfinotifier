@@ -96,7 +96,7 @@ public class CommandsProcessor {
 		} else if (command.equals("followgame")) {
 			List<Game> notFollowedGames = currentUser.getNotFollowedGames();
 			if (notFollowedGames.isEmpty()) {
-				answer.append("Error : You are following already all games !");
+				answer.append("Error : You are already following all games !");
 			} else {
 				try {
 					String gameUid = args[1].toUpperCase();

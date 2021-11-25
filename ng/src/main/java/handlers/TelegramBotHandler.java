@@ -49,7 +49,7 @@ public class TelegramBotHandler implements BotInterfaceHandler {
 	}
 
 	@Override
-	public void sendNotification(long chatId, String message) {
+	public void sendPrivateMessage(long chatId, String message, boolean isNotification) {
 		final TelegramBot telegramBot = getTelegramBot();
 		if (telegramBot == null) {
 			return;
@@ -65,8 +65,10 @@ public class TelegramBotHandler implements BotInterfaceHandler {
 					System.err.println(e.getMessage());
 					return null;
 				}).whenComplete((m, t) -> {
-					if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
-						Stats.notificationsIssuedCount.incrementAndGet();
+					if (isNotification) {
+						if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
+							Stats.notificationsIssuedCount.incrementAndGet();
+						}
 					}
 				});
 			} catch (final TelegramApiException e) {

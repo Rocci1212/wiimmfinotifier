@@ -59,7 +59,7 @@ public class GamesListParser {
 			}
 			if (notificationBuilder.length() > 0) {
 				final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(user.getBotInterface());
-				botInterfaceHandler.sendNotification(user.getUserId(), notificationBuilder.substring(1));
+				botInterfaceHandler.sendPrivateMessage(user.getUserId(), notificationBuilder.substring(1), true);
 			}
 		}
 	}

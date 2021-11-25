@@ -19,7 +19,7 @@ public class DiscordBotHandler implements BotInterfaceHandler {
 	}
 
 	@Override
-	public void sendNotification(long userId, String message) {
+	public void sendPrivateMessage(long userId, String message, boolean isNotification) {
 		final JDA discordBot = getDiscordBot();
 		if (discordBot == null) {
 			return;
@@ -30,8 +30,10 @@ public class DiscordBotHandler implements BotInterfaceHandler {
 			if (user != null) {
 				user.openPrivateChannel().queue((channel) -> {
 					channel.sendMessage(maxPossibleSizeMessage).queue((m) -> {
-							if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
-								Stats.notificationsIssuedCount.incrementAndGet();
+							if (isNotification) {
+								if (!notified.getAndSet(true)) { // On ne veut pas log chaque partie
+									Stats.notificationsIssuedCount.incrementAndGet();
+								}
 							}
 						}, new ErrorHandler().ignore(ErrorResponse.CANNOT_SEND_TO_USER));
 				});

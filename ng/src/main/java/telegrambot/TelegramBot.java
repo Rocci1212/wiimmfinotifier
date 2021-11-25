@@ -45,6 +45,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 					final SendMessage maxPossibleAnswerMessage = new SendMessage();
 					maxPossibleAnswerMessage.setText(maxPossibleSizeMessage);
 					maxPossibleAnswerMessage.enableHtml(true);
+					maxPossibleAnswerMessage.setReplyMarkup(answerMessage.getReplyMarkup());
 					maxPossibleAnswerMessage.setChatId(String.valueOf(chat_id));
 					try {
 						// Sending our message object to the user
