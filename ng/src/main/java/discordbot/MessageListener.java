@@ -35,7 +35,7 @@ public class MessageListener extends ListenerAdapter {
             jdaBuilder.setChunkingFilter(ChunkingFilter.ALL);
             jdaBuilder.disableCache(CacheFlag.ACTIVITY, CacheFlag.CLIENT_STATUS, CacheFlag.EMOTE, CacheFlag.VOICE_STATE);
             jdaBuilder.enableIntents(GatewayIntent.GUILD_MEMBERS);
-            jdaBuilder.disableIntents(GatewayIntent.GUILD_MESSAGE_TYPING);
+            jdaBuilder.disableIntents(GatewayIntent.GUILD_MESSAGE_TYPING, GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MESSAGE_REACTIONS);
             jdaBuilder.addEventListeners(new MessageListener());
             final JDA jda = jdaBuilder.build().awaitReady();
             jda.getPresence().setActivity(Activity.playing("DM me to follow games !"));
@@ -111,24 +111,19 @@ public class MessageListener extends ListenerAdapter {
         MessageChannel channel = event.getChannel();
         String msg = message.getContentDisplay();
         boolean bot = author.isBot();
-        if (!bot) {
-            if (event.isFromType(ChannelType.PRIVATE)) {
-            	objects.User currentUser = getCurrentUser(author.getIdLong(), BotInterfaces.DISCORD);
-            	String answer = CommandsProcessor.processCommandFromDiscord(currentUser, msg);
-            	if (answer != null) {
-            	    for (final String maxPossibleSizeMessage : MessagesSplitter.getMaximumPossibleSizeSplittedMessagesList(answer, Config.discordMaxMessageLength)) {
-                        channel.sendMessage(maxPossibleSizeMessage).queue();
-                    }
-            	}
-            } else if (event.isFromType(ChannelType.TEXT)) {
-            	if (msg.equalsIgnoreCase("!showplayedgames") || msg.equalsIgnoreCase("!wp")) {
-            		// Global command
-            		String answer = CommandsProcessor.processCommandFromDiscord(null, "showplayedgames");
-            		if (answer != null) {
-            			channel.sendMessage(answer).queue();
-            		}
-            	}
-            }
+        if (bot) {
+            return;
+        }
+        if (!event.isFromType(ChannelType.PRIVATE)) {
+            return;
+        }
+        objects.User currentUser = getCurrentUser(author.getIdLong(), BotInterfaces.DISCORD);
+        String answer = CommandsProcessor.processCommandFromDiscord(currentUser, msg);
+        if (answer == null) {
+            return;
+        }
+        for (final String maxPossibleSizeMessage : MessagesSplitter.getMaximumPossibleSizeSplittedMessagesList(answer, Config.discordMaxMessageLength)) {
+            channel.sendMessage(maxPossibleSizeMessage).queue();
         }
     }
 }

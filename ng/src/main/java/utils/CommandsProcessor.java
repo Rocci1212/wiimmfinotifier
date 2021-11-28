@@ -35,6 +35,9 @@ public class CommandsProcessor {
 	}
 
 	private static String processCommand(User currentUser, String request, BotInterfaces botInterface, SendMessage telegramSendMessage) {
+		if (currentUser == null) {
+			return "Wiimmfi Notifier does not know you are. This is not your fault, please contact the developer...";
+		}
 		final String[] args = request.split(" ");
 		final String command = args[0].toLowerCase();
 
