@@ -87,7 +87,7 @@ public class Main {
 				        	GamesListParser.gamesFinishedActivityWarning();
 				        	Stats.checkGamesListCount.incrementAndGet();
 							Main.printNewEvent("Check games list task finished", true);
-						} catch (IOException e) {
+						} catch (Exception e) {
 							e.printStackTrace();
 							Main.printNewEvent("Check games list task failed", true);
 							if (e instanceof FlareSolverrException) {
