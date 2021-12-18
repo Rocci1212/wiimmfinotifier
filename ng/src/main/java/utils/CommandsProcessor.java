@@ -25,15 +25,15 @@ import wiimmfi.GamesListParser;
 public class CommandsProcessor {
 	private final static String[] commands = { "infos", "showplayedgames", "followgame", "unfollowgame" };
 
-	public static String processCommandFromTelegram(User currentUser, String request, SendMessage telegramSendMessage) {
-		return processCommand(currentUser, request, BotInterfaces.TELEGRAM, telegramSendMessage);
+	public static String processCommandFromTelegram(long userId, User currentUser, String request, SendMessage telegramSendMessage) {
+		return processCommand(userId, currentUser, request, BotInterfaces.TELEGRAM, telegramSendMessage);
 	}
 
-	public static String processCommandFromDiscord(User currentUser, String request) {
-		return processCommand(currentUser, request, BotInterfaces.DISCORD, null);
+	public static String processCommandFromDiscord(long userId, User currentUser, String request) {
+		return processCommand(userId, currentUser, request, BotInterfaces.DISCORD, null);
 	}
 
-	private static String processCommand(User currentUser, String request, BotInterfaces botInterface, SendMessage telegramSendMessage) {
+	private static String processCommand(long userId, User currentUser, String request, BotInterfaces botInterface, SendMessage telegramSendMessage) {
 		if (currentUser == null) {
 			return "Wiimmfi Notifier does not know you are. This is not your fault, please contact the developer...";
 		}
@@ -50,8 +50,13 @@ public class CommandsProcessor {
 			answer.append(botInterfaceHandler.getBoldText("Stats"));
 			answer.append("\n");
 			answer.append("Uptime : " + Main.getUptime() + "\n");
-			answer.append("Total users count (Telegram + Discord) : ");
-			answer.append(BotsHandler.getUsers().size() + "\n");
+			for (final BotInterfaces bi : BotInterfaces.values()) {
+				answer.append("Total ");
+				answer.append(bi.toString().toLowerCase());
+				answer.append(" interface users count : ");
+				answer.append(BotsHandler.getUsers(bi).size());
+				answer.append("\n");
+			}
 			answer.append("Number of games list check this session : ");
 			answer.append(Stats.checkGamesListCount.get() + "\n");
 			answer.append("Number of notifications delivered this session : ");
@@ -106,11 +111,11 @@ public class CommandsProcessor {
 						for (Game notFollowedGame : notFollowedGames) {
 							if (!currentUser.getFollowedGamesUid().contains(notFollowedGame.getUniqueId())) {
 								currentUser.getFollowedGamesUid().add(notFollowedGame.getUniqueId());
-								DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), notFollowedGame.getUniqueId(), botInterface);
+								DatabaseHandler.addUserFollowedGame(userId, notFollowedGame.getUniqueId(), botInterface);
 							}
 						}
 						answer.append("You are now following the activity of all Wiimmfi games !");
-						Main.printNewEvent("User " + currentUser.getUserId() + " follow all games", true, botInterface);
+						Main.printNewEvent("User " + userId + " follow all games", true, botInterface);
 					} else {
 						Game game = GamesListParser.getGameByUniqueId(gameUid);
 						if (game == null) {
@@ -118,9 +123,9 @@ public class CommandsProcessor {
 						}
 						if (!currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
 							currentUser.getFollowedGamesUid().add(game.getUniqueId());
-							DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
+							DatabaseHandler.addUserFollowedGame(userId, game.getUniqueId(), botInterface);
 							answer.append("You are now following the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + currentUser.getUserId() + " follow " + game.getUniqueId(), true, botInterface);
+							Main.printNewEvent("User " + userId + " follow " + game.getUniqueId(), true, botInterface);
 						} else {
 							answer.append("Error : You follow already this game !");
 						}
@@ -142,10 +147,10 @@ public class CommandsProcessor {
 					if (args[1].equals("all")) {
 						currentUser.getFollowedGamesUid().clear();
 						for (Game followedGame : followedGames) {
-							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), followedGame.getUniqueId(), botInterface);
+							DatabaseHandler.deleteUserFollowedGame(userId, followedGame.getUniqueId(), botInterface);
 						}
 						answer.append("You are not following the activity of any games anymore");
-						Main.printNewEvent("User " + currentUser.getUserId() + " unfollow all games", true, botInterface);
+						Main.printNewEvent("User " + userId + " unfollow all games", true, botInterface);
 					} else {
 						Game game = GamesListParser.getGameByUniqueId(gameUid);
 						if (game == null) {
@@ -153,9 +158,9 @@ public class CommandsProcessor {
 						}
 						if (currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
 							currentUser.getFollowedGamesUid().remove(game.getUniqueId());
-							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
+							DatabaseHandler.deleteUserFollowedGame(userId, game.getUniqueId(), botInterface);
 							answer.append("You are not following anymore the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + currentUser.getUserId() + " unfollow " + game.getUniqueId(), true, botInterface);
+							Main.printNewEvent("User " + userId + " unfollow " + game.getUniqueId(), true, botInterface);
 						} else {
 							answer.append("Error : You were not following this game !");
 						}

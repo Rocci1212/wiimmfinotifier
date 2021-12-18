@@ -4,21 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import kernel.BotInterfaces;
 import wiimmfi.GamesListParser;
 
 public class User {
-	private final long userId;
 	private final List<String> followedGamesUid = new CopyOnWriteArrayList<>();
-	private final BotInterfaces botInterface;
 
-	public User(long userId, BotInterfaces botInterface) {
-		this.userId = userId;
-		this.botInterface = botInterface;
-	}
-
-	public long getUserId() {
-		return userId;
+	public User() {
 	}
 
 	public boolean isGameFollowed(String gameUniqueId) {
@@ -52,9 +43,5 @@ public class User {
 	
 	public List<String> getFollowedGamesUid() {
 		return followedGamesUid;
-	}
-
-	public BotInterfaces getBotInterface() {
-		return botInterface;
 	}
 }

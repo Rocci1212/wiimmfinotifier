@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import handlers.BotsHandler;
 import handlers.interfaces.BotInterfaceHandler;
+import kernel.BotInterfaces;
 import kernel.Config;
 import kernel.Main;
 import objects.Game;
@@ -34,26 +35,30 @@ public class GamesListParser {
 	}
 	
 	public static void warnUsers() {
-		for (User user : BotsHandler.getUsers()) {
-			StringBuilder notificationBuilder = new StringBuilder();
-			for (Game game : getGames().values()) {
-				if (user.isGameFollowed(game.getUniqueId())) {
-					switch (game.getWarnPlayingActivity()) {
-					case 1:
-						notificationBuilder.append("\n- " + game.getType() + " " + game.getProductionName() + " is now played");
-						notificationBuilder.append(" (" + game.getOnlineCount() + " online)");
-						break;
-					case 2:
-						notificationBuilder.append("\n- " + game.getType() + " " + game.getProductionName() + " is not played anymore");
-						break;
-					default:
-						break;
+		for (BotInterfaces botInterface : BotInterfaces.values()) {
+			for (Map.Entry<Long, User> entry : BotsHandler.getUsers(botInterface).entrySet()) {
+				final long userId = entry.getKey();
+				final User user = entry.getValue();
+				StringBuilder notificationBuilder = new StringBuilder();
+				for (Game game : getGames().values()) {
+					if (user.isGameFollowed(game.getUniqueId())) {
+						switch (game.getWarnPlayingActivity()) {
+							case 1:
+								notificationBuilder.append("\n- " + game.getType() + " " + game.getProductionName() + " is now played");
+								notificationBuilder.append(" (" + game.getOnlineCount() + " online)");
+								break;
+							case 2:
+								notificationBuilder.append("\n- " + game.getType() + " " + game.getProductionName() + " is not played anymore");
+								break;
+							default:
+								break;
+						}
 					}
 				}
-			}
-			if (notificationBuilder.length() > 0) {
-				final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(user.getBotInterface());
-				botInterfaceHandler.sendPrivateMessage(user.getUserId(), notificationBuilder.substring(1), true);
+				if (notificationBuilder.length() > 0) {
+					final BotInterfaceHandler botInterfaceHandler = BotsHandler.getBotInterfaceHandler(botInterface);
+					botInterfaceHandler.sendPrivateMessage(userId, notificationBuilder.substring(1), true);
+				}
 			}
 		}
 	}

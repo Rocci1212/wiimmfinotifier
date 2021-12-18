@@ -33,13 +33,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 			final long chat_id = update.getMessage().getChatId();
 			User currentUser = BotsHandler.getUser(chat_id, BotInterfaces.TELEGRAM);
 			if (currentUser == null) {
-				currentUser = new User(chat_id, BotInterfaces.TELEGRAM);
-				BotsHandler.getUsers().add(currentUser);
+				currentUser = new User();
+				BotsHandler.getUsers(BotInterfaces.TELEGRAM).put(chat_id, currentUser);
 				DatabaseHandler.addUser(chat_id, BotInterfaces.TELEGRAM);
 				Main.printNewEvent("User creation : " + chat_id, true, BotInterfaces.TELEGRAM);
 			}
 			final SendMessage answerMessage = new SendMessage();
-			final String answerText = CommandsProcessor.processCommandFromTelegram(currentUser, message_text, answerMessage);
+			final String answerText = CommandsProcessor.processCommandFromTelegram(chat_id, currentUser, message_text, answerMessage);
 			if (answerText != null) {
 				for (final String maxPossibleSizeMessage : MessagesSplitter.getMaximumPossibleSizeSplittedMessagesList(answerText, Config.discordMaxMessageLength)) {
 					final SendMessage maxPossibleAnswerMessage = new SendMessage();

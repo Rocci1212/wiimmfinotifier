@@ -70,8 +70,8 @@ public class MessageListener extends ListenerAdapter {
     public synchronized objects.User getCurrentUser(long userId, BotInterfaces botInterface) {
     	objects.User currentUser = BotsHandler.getUser(userId, botInterface);
 		if (currentUser == null) {
-			currentUser = new objects.User(userId, botInterface);
-			BotsHandler.getUsers().add(currentUser);
+			currentUser = new objects.User();
+			BotsHandler.getUsers(botInterface).put(userId, currentUser);
 			DatabaseHandler.addUser(userId, botInterface);
 			Main.printNewEvent("User creation : " + userId, true, botInterface);
 		}
@@ -90,7 +90,7 @@ public class MessageListener extends ListenerAdapter {
                 break;
         }
         objects.User currentUser = getCurrentUser(author.getIdLong(), BotInterfaces.DISCORD);
-        String answer = CommandsProcessor.processCommandFromDiscord(currentUser, sb.toString());
+        String answer = CommandsProcessor.processCommandFromDiscord(author.getIdLong(), currentUser, sb.toString());
         if (answer != null) {
             final boolean tooLong = answer.length() > Config.discordMaxMessageLength;
             if (tooLong) {
@@ -118,7 +118,7 @@ public class MessageListener extends ListenerAdapter {
             return;
         }
         objects.User currentUser = getCurrentUser(author.getIdLong(), BotInterfaces.DISCORD);
-        String answer = CommandsProcessor.processCommandFromDiscord(currentUser, msg);
+        String answer = CommandsProcessor.processCommandFromDiscord(author.getIdLong(), currentUser, msg);
         if (answer == null) {
             return;
         }

@@ -48,8 +48,9 @@ public class DatabaseHandler {
 		try (Connection con = DatabaseHandler.getConnection(botInterface);
 			 ResultSet RS = DatabaseHandler.executeQuery(query, con)) {
 			while (RS.next()) {
-				User user = new User(RS.getLong("userId"), botInterface);
-				BotsHandler.getUsers().add(user);
+				final long userId = RS.getLong("userId");
+				User user = new User();
+				BotsHandler.getUsers(botInterface).put(userId, user);
 				i++;
 			}
 			Main.printNewEvent(i + " user(s) loaded from database", false, botInterface);
