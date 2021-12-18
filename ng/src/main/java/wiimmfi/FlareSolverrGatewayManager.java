@@ -7,6 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonObject;
@@ -62,6 +63,7 @@ public class FlareSolverrGatewayManager {
             put("cmd", "request.get");
             put("url", Config.wiimmfiFullGamesListPath);
             put("session", Config.flareSolverrSession);
+            put("maxTimeout", String.valueOf(TimeUnit.SECONDS.toMillis(Config.flareSolverrRequestMaxTimeout)));
         }};
         final JsonObject jsonObject = makeRequest(values);
         final String status = jsonObject.get("status").getAsString();

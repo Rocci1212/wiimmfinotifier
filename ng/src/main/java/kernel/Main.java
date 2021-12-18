@@ -27,7 +27,7 @@ public class Main {
 			System.exit(1);
 		}
 		for (final BotInterfaces botInterface : BotInterfaces.values()) {
-			Main.printNewEvent("Load " + botInterface.name() + " bot interface database", false);
+			Main.printNewEvent("Load " + botInterface.toString() + " bot interface database", false);
 			if (DatabaseHandler.setUpConnexion(botInterface)) {
 
 			} else {
@@ -121,6 +121,11 @@ public class Main {
 		} else {
 			System.out.println(new Date() + " | " + event);
 		}
+	}
+
+	public static void printNewEvent(String event, boolean debug, BotInterfaces botInterface) {
+		event = "[" + botInterface.toString() + "] " + event;
+		printNewEvent(event, debug);
 	}
 	
 	private synchronized static void stopThread(Thread thread) {

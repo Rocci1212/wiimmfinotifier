@@ -22,6 +22,7 @@ public class Config {
 	public static boolean useFlareSolverr = false;
 	public static String flareSolverrUrl = "";
 	public static String flareSolverrSession = "";
+	public static int flareSolverrRequestMaxTimeout = 60;
 	// API specifications
 	public static int discordMaxMessageLength = 2000;
 	public static int telegramMaxMessageLength = 4096;
@@ -48,6 +49,8 @@ public class Config {
 					Config.flareSolverrUrl = value;
 				} else if (param.equalsIgnoreCase("FLARE_SOLVERR_SESSION")) {
 					Config.flareSolverrSession = value;
+				} else if (param.equalsIgnoreCase("FLARE_SOLVERR_REQUEST_MAX_TIMEOUT")) {
+					Config.flareSolverrRequestMaxTimeout = Integer.parseInt(value);
 				} else if (param.equalsIgnoreCase("GAMES_LIST_PARSING_SECONDS_INTERVAL")) {
 					Config.gamesListParsingSecondsInterval = Integer.parseInt(value);
 				} else if (param.equalsIgnoreCase("MAX_MESSAGE_LENGTH_DISCORD")) {

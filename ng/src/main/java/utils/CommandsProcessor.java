@@ -111,7 +111,7 @@ public class CommandsProcessor {
 							}
 						}
 						answer.append("You are now following the activity of all Wiimmfi games !");
-						Main.printNewEvent("User " + currentUser.getUserId() + " follow all games", true);
+						Main.printNewEvent("User " + currentUser.getUserId() + " follow all games", true, botInterface);
 					} else {
 						Game game = GamesListParser.getGameByUniqueId(gameUid);
 						if (game == null) {
@@ -121,7 +121,7 @@ public class CommandsProcessor {
 							currentUser.getFollowedGamesUid().add(game.getUniqueId());
 							DatabaseHandler.addUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
 							answer.append("You are now following the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + currentUser.getUserId() + " follow " + game.getUniqueId(), true);
+							Main.printNewEvent("User " + currentUser.getUserId() + " follow " + game.getUniqueId(), true, botInterface);
 						} else {
 							answer.append("Error : You follow already this game !");
 						}
@@ -146,7 +146,7 @@ public class CommandsProcessor {
 							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), followedGame.getUniqueId(), botInterface);
 						}
 						answer.append("You are not following the activity of any games anymore");
-						Main.printNewEvent("User " + currentUser.getUserId() + " unfollow all games", true);
+						Main.printNewEvent("User " + currentUser.getUserId() + " unfollow all games", true, botInterface);
 					} else {
 						Game game = GamesListParser.getGameByUniqueId(gameUid);
 						if (game == null) {
@@ -156,7 +156,7 @@ public class CommandsProcessor {
 							currentUser.getFollowedGamesUid().remove(game.getUniqueId());
 							DatabaseHandler.deleteUserFollowedGame(currentUser.getUserId(), game.getUniqueId(), botInterface);
 							answer.append("You are not following anymore the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + currentUser.getUserId() + " unfollow " + game.getUniqueId(), true);
+							Main.printNewEvent("User " + currentUser.getUserId() + " unfollow " + game.getUniqueId(), true, botInterface);
 						} else {
 							answer.append("Error : You were not following this game !");
 						}

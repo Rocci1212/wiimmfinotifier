@@ -73,7 +73,7 @@ public class MessageListener extends ListenerAdapter {
 			currentUser = new objects.User(userId, botInterface);
 			BotsHandler.getUsers().add(currentUser);
 			DatabaseHandler.addUser(userId, botInterface);
-			Main.printNewEvent("User creation : " + userId, true);
+			Main.printNewEvent("User creation : " + userId, true, botInterface);
 		}
 		return currentUser;
     }

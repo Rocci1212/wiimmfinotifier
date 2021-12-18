@@ -23,7 +23,7 @@ public class DatabaseHandler {
 				i++;
 			}
 			DatabaseHandler.closeResultSet(resultset);
-			Main.printNewEvent(i + " user(s) loaded from database", false);
+			Main.printNewEvent(i + " user(s) loaded from database", false, botInterface);
 		} catch (final SQLException e) {
 			e.printStackTrace();
 		}
@@ -42,7 +42,7 @@ public class DatabaseHandler {
 				}
 			}
 			DatabaseHandler.closeResultSet(resultset);
-			Main.printNewEvent(i + " user(s) followed games loaded from database", false);
+			Main.printNewEvent(i + " user(s) followed games loaded from database", false, botInterface);
 		} catch (final SQLException e) {
 			e.printStackTrace();
 		}
@@ -127,7 +127,7 @@ public class DatabaseHandler {
 			try {
 				if (!getConnection(botInterface).isValid(1000)) throw new SQLException();
 			} catch (SQLException e1) {
-				Main.printNewEvent("Database connection has been lost, auto reconnecting in 1s", false);
+				Main.printNewEvent("Database connection has been lost, auto reconnecting in 1s", false, botInterface);
 				try {
 					Thread.sleep(1000);
 					if (!setUpConnexion(botInterface)) { // Reconnect
@@ -148,14 +148,14 @@ public class DatabaseHandler {
 			final Connection connection = DriverManager.getConnection("jdbc:mysql://" + Config.dbHost + "/" + dbName, Config.dbUser, Config.dbPass);
 			connection.setAutoCommit(true);
 			if (!connection.isValid(1000)) {
-				Main.printNewEvent("Connection to the database : failed (invalid)", false);
+				Main.printNewEvent("Connection to the database : failed (invalid)", false, botInterface);
 				return false;
 			}
 			connections.put(botInterface, connection);
-			Main.printNewEvent("Connection to the database : ok", false);
+			Main.printNewEvent("Connection to the database : ok", false, botInterface);
 			return true;
 		} catch (final SQLException e) {
-			Main.printNewEvent("Connection to the database : failed (" + e.getMessage() + ")", false);
+			Main.printNewEvent("Connection to the database : failed (" + e.getMessage() + ")", false, botInterface);
 			return false;
 		}
 	}

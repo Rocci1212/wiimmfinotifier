@@ -36,7 +36,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 				currentUser = new User(chat_id, BotInterfaces.TELEGRAM);
 				BotsHandler.getUsers().add(currentUser);
 				DatabaseHandler.addUser(chat_id, BotInterfaces.TELEGRAM);
-				Main.printNewEvent("User creation : " + chat_id, true);
+				Main.printNewEvent("User creation : " + chat_id, true, BotInterfaces.TELEGRAM);
 			}
 			final SendMessage answerMessage = new SendMessage();
 			final String answerText = CommandsProcessor.processCommandFromTelegram(currentUser, message_text, answerMessage);
