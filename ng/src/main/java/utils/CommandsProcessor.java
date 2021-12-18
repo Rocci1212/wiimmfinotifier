@@ -8,7 +8,6 @@ import java.time.format.FormatStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import handlers.BotsHandler;
 import handlers.DatabaseHandler;
@@ -68,7 +67,7 @@ public class CommandsProcessor {
 			answer.append("\n\n");
 			answer.append(botInterfaceHandler.getBoldText("Followed games"));
 			answer.append("\n");
-			List<String> followedGamesUid = new CopyOnWriteArrayList<>(currentUser.getFollowedGamesUid());
+			List<String> followedGamesUid = new ArrayList<>(currentUser.getFollowedGamesUid());
 			if (followedGamesUid.isEmpty()) {
 				answer.append("You don't follow any games");
 			} else {
@@ -82,7 +81,7 @@ public class CommandsProcessor {
 			}
 		} else if (command.equals("showplayedgames")) {
 			List<Game> playedGames = new ArrayList<>();
-			for (Game game : GamesListParser.getGames()) {
+			for (Game game : GamesListParser.getGames().values()) {
 				if (game.getOnlineCount() > 0) {
 					playedGames.add(game);
 				}

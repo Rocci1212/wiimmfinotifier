@@ -2,8 +2,8 @@ package wiimmfi;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import handlers.BotsHandler;
 import handlers.interfaces.BotInterfaceHandler;
@@ -18,7 +18,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class GamesListParser {
-	private static final List<Game> games = new CopyOnWriteArrayList<>();
+	private static final Map<String, Game> games = new ConcurrentHashMap<>();
 	private static Instant lastSuccessInstant = null;
 
 	public static Instant getLastSuccessInstant() {
@@ -26,23 +26,17 @@ public class GamesListParser {
 	}
 
 	public static Game getGameByUniqueId(String uniqueId) {
-		for (Game game : getGames()) {
-			if (game.getUniqueId().equals(uniqueId)) {
-				return game;
-			}
-
-		}
-		return null;
+		return games.get(uniqueId);
 	}
 	
-	public static List<Game> getGames() {
+	public static Map<String, Game> getGames() {
 		return games;
 	}
 	
 	public static void warnUsers() {
 		for (User user : BotsHandler.getUsers()) {
 			StringBuilder notificationBuilder = new StringBuilder();
-			for (Game game : getGames()) {
+			for (Game game : getGames().values()) {
 				if (user.isGameFollowed(game.getUniqueId())) {
 					switch (game.getWarnPlayingActivity()) {
 					case 1:
@@ -65,7 +59,7 @@ public class GamesListParser {
 	}
 	
 	public static void gamesFinishedActivityWarning() {
-		for (Game game : getGames()) {
+		for (Game game : getGames().values()) {
 			game.setWarnPlayingActivity((short) 0);
 		}
 	}
@@ -119,7 +113,7 @@ public class GamesListParser {
 			    	type = "Unknown";
 			    }
 			    Game game = new Game(uniqueId, productionName, type, onlineCount);
-			    getGames().add(game);
+			    getGames().put(uniqueId, game);
 		    }
 		}
 		lastSuccessInstant = Instant.now();

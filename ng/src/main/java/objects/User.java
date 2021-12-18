@@ -32,7 +32,7 @@ public class User {
 	
 	public List<Game> getNotFollowedGames() {
 		List<Game> notFollowedGames = new ArrayList<>();
-		for (Game game : GamesListParser.getGames()) {
+		for (Game game : GamesListParser.getGames().values()) {
 			if (!isGameFollowed(game.getUniqueId())) {
 				notFollowedGames.add(game);
 			}
@@ -42,7 +42,7 @@ public class User {
 	
 	public List<Game> getFollowedGames() {
 		List<Game> followedGames = new ArrayList<>();
-		for (Game game : GamesListParser.getGames()) {
+		for (Game game : GamesListParser.getGames().values()) {
 			if (isGameFollowed(game.getUniqueId())) {
 				followedGames.add(game);
 			}
