@@ -40,8 +40,10 @@ public class GamesListParser {
 				final long userId = entry.getKey();
 				final User user = entry.getValue();
 				StringBuilder notificationBuilder = new StringBuilder();
-				for (Game game : getGames().values()) {
-					if (user.isGameFollowed(game.getUniqueId())) {
+				for (Map.Entry<String, Game> entry2 : getGames().entrySet()) {
+					final String gameUid = entry2.getKey();
+					final Game game = entry2.getValue();
+					if (user.isFollowingGame(gameUid)) {
 						switch (game.getWarnPlayingActivity()) {
 							case 1:
 								notificationBuilder.append("\n- " + game.getType() + " " + game.getProductionName() + " is now played");
@@ -117,7 +119,7 @@ public class GamesListParser {
 			    } else {
 			    	type = "Unknown";
 			    }
-			    Game game = new Game(uniqueId, productionName, type, onlineCount);
+			    Game game = new Game(productionName, type, onlineCount);
 			    getGames().put(uniqueId, game);
 		    }
 		}

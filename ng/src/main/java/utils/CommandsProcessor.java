@@ -5,9 +5,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import handlers.BotsHandler;
 import handlers.DatabaseHandler;
@@ -72,17 +70,11 @@ public class CommandsProcessor {
 			answer.append("\n\n");
 			answer.append(botInterfaceHandler.getBoldText("Followed games"));
 			answer.append("\n");
-			List<String> followedGamesUid = new ArrayList<>(currentUser.getFollowedGamesUid());
+			Set<String> followedGamesUid = currentUser.getFollowedGamesUid();
 			if (followedGamesUid.isEmpty()) {
 				answer.append("You don't follow any games");
 			} else {
-				for (int i = 0; i < followedGamesUid.size(); i++) {
-					String gameUid = followedGamesUid.get(i);
-					answer.append(gameUid);
-					if (i + 1 < followedGamesUid.size()) {
-						answer.append(", ");
-					}
-				}
+				answer.append(String.join(", ", followedGamesUid));
 			}
 		} else if (command.equals("showplayedgames")) {
 			List<Game> playedGames = new ArrayList<>();
@@ -101,17 +93,17 @@ public class CommandsProcessor {
 				}
 			}
 		} else if (command.equals("followgame")) {
-			List<Game> notFollowedGames = currentUser.getNotFollowedGames();
+			Map<String, Game> notFollowedGames = currentUser.getFollowableGames();
 			if (notFollowedGames.isEmpty()) {
 				answer.append("Error : You are already following all games !");
 			} else {
 				try {
 					String gameUid = args[1].toUpperCase();
 					if (args[1].equals("all")) {
-						for (Game notFollowedGame : notFollowedGames) {
-							if (!currentUser.getFollowedGamesUid().contains(notFollowedGame.getUniqueId())) {
-								currentUser.getFollowedGamesUid().add(notFollowedGame.getUniqueId());
-								DatabaseHandler.addUserFollowedGame(userId, notFollowedGame.getUniqueId(), botInterface);
+						for (String notFollowedGameUid : notFollowedGames.keySet()) {
+							if (!currentUser.getFollowedGamesUid().contains(notFollowedGameUid)) {
+								currentUser.getFollowedGamesUid().add(notFollowedGameUid);
+								DatabaseHandler.addUserFollowedGame(userId, notFollowedGameUid, botInterface);
 							}
 						}
 						answer.append("You are now following the activity of all Wiimmfi games !");
@@ -121,11 +113,11 @@ public class CommandsProcessor {
 						if (game == null) {
 							throw new Exception();
 						}
-						if (!currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
-							currentUser.getFollowedGamesUid().add(game.getUniqueId());
-							DatabaseHandler.addUserFollowedGame(userId, game.getUniqueId(), botInterface);
+						if (!currentUser.getFollowedGamesUid().contains(gameUid)) {
+							currentUser.getFollowedGamesUid().add(gameUid);
+							DatabaseHandler.addUserFollowedGame(userId, gameUid, botInterface);
 							answer.append("You are now following the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + userId + " follow " + game.getUniqueId(), true, botInterface);
+							Main.printNewEvent("User " + userId + " follow " + gameUid, true, botInterface);
 						} else {
 							answer.append("Error : You follow already this game !");
 						}
@@ -138,17 +130,17 @@ public class CommandsProcessor {
 				}
 			}
 		} else if (command.equals("unfollowgame")) {
-			List<Game> followedGames = currentUser.getFollowedGames();
-			if (followedGames.isEmpty()) {
+			Set<String> followedGamesUid = currentUser.getFollowedGamesUid();
+			if (followedGamesUid.isEmpty()) {
 				answer.append("Error : You are not following any games !");
 			} else {
 				try {
 					String gameUid = args[1].toUpperCase();
 					if (args[1].equals("all")) {
-						currentUser.getFollowedGamesUid().clear();
-						for (Game followedGame : followedGames) {
-							DatabaseHandler.deleteUserFollowedGame(userId, followedGame.getUniqueId(), botInterface);
+						for (String followedGameUid : followedGamesUid) {
+							DatabaseHandler.deleteUserFollowedGame(userId, followedGameUid, botInterface);
 						}
+						currentUser.getFollowedGamesUid().clear();
 						answer.append("You are not following the activity of any games anymore");
 						Main.printNewEvent("User " + userId + " unfollow all games", true, botInterface);
 					} else {
@@ -156,11 +148,11 @@ public class CommandsProcessor {
 						if (game == null) {
 							throw new Exception();
 						}
-						if (currentUser.getFollowedGamesUid().contains(game.getUniqueId())) {
-							currentUser.getFollowedGamesUid().remove(game.getUniqueId());
-							DatabaseHandler.deleteUserFollowedGame(userId, game.getUniqueId(), botInterface);
+						if (currentUser.getFollowedGamesUid().contains(gameUid)) {
+							currentUser.getFollowedGamesUid().remove(gameUid);
+							DatabaseHandler.deleteUserFollowedGame(userId, gameUid, botInterface);
 							answer.append("You are not following anymore the activity of the game : " + game.getProductionName());
-							Main.printNewEvent("User " + userId + " unfollow " + game.getUniqueId(), true, botInterface);
+							Main.printNewEvent("User " + userId + " unfollow " + gameUid, true, botInterface);
 						} else {
 							answer.append("Error : You were not following this game !");
 						}
