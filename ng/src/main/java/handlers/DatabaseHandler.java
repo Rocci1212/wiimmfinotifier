@@ -4,25 +4,54 @@ import java.sql.*;
 import java.util.EnumMap;
 import java.util.Map;
 
+import com.zaxxer.hikari.HikariDataSource;
 import kernel.BotInterfaces;
 import kernel.Config;
 import kernel.Main;
 import objects.User;
 
 public class DatabaseHandler {
-	private static Map<BotInterfaces, Connection> connections = new EnumMap<>(BotInterfaces.class);
+	private static final Map<BotInterfaces, HikariDataSource> DATA_SOURCES = new EnumMap<>(BotInterfaces.class);
+
+	public static void initBotInterfaceDataSource(BotInterfaces botInterface) {
+		// Datasource config
+		final String DBName = botInterface == BotInterfaces.DISCORD ? Config.DBNameDiscord : Config.DBNameTelegram;
+		final HikariDataSource ds = new HikariDataSource();
+		ds.setDriverClassName(Config.DBDriverClassName);
+		ds.setJdbcUrl(Config.DBBaseJDBCUrl + Config.DBHost + ":" + Config.DBPort + "/" + DBName);
+		ds.addDataSourceProperty("user", Config.DBUser);
+		ds.addDataSourceProperty("password", Config.DBPass);
+		ds.addDataSourceProperty("cachePrepStmts", true);
+		ds.addDataSourceProperty("prepStmtCacheSize", 250);
+		ds.addDataSourceProperty("prepStmtCacheSqlLimit", 2048);
+		ds.addDataSourceProperty("useServerPrepStmts", true);
+		ds.addDataSourceProperty("useLocalSessionState", true);
+		ds.addDataSourceProperty("rewriteBatchedStatements", true);
+		ds.addDataSourceProperty("cacheResultSetMetadata", true);
+		ds.addDataSourceProperty("cacheServerConfiguration", true);
+		ds.addDataSourceProperty("elideSetAutoCommits", true);
+		ds.addDataSourceProperty("maintainTimeStats", false);
+
+		// Pool datasource config
+		ds.setPoolName(DBName);
+		ds.setMaximumPoolSize(10);
+		ds.setAutoCommit(true);
+		ds.setConnectionTimeout(3000); // 3s
+		final int secondsTtlToMs = Config.DBConnectionSecondsTtl * 1000;
+		ds.setMaxLifetime(secondsTtlToMs);
+		DATA_SOURCES.put(botInterface, ds);
+	}
 
 	public synchronized static void loadUsers(BotInterfaces botInterface) {
 		int i = 0;
-		try {
-			final String query = "SELECT * FROM `users`;";
-			final ResultSet resultset = DatabaseHandler.executeQuery(query, botInterface);
-			while (resultset.next()) {
-				User user = new User(resultset.getLong("userId"), botInterface);
+		final String query = "SELECT * FROM `users`;";
+		try (Connection con = DatabaseHandler.getConnection(botInterface);
+			 ResultSet RS = DatabaseHandler.executeQuery(query, con)) {
+			while (RS.next()) {
+				User user = new User(RS.getLong("userId"), botInterface);
 				BotsHandler.getUsers().add(user);
 				i++;
 			}
-			DatabaseHandler.closeResultSet(resultset);
 			Main.printNewEvent(i + " user(s) loaded from database", false, botInterface);
 		} catch (final SQLException e) {
 			e.printStackTrace();
@@ -31,17 +60,16 @@ public class DatabaseHandler {
 	
 	public synchronized static void loadUsersFollowedGames(BotInterfaces botInterface) {
 		int i = 0;
-		try {
-			final String query = "SELECT * FROM `users_followedgames`;";
-			final ResultSet resultset = DatabaseHandler.executeQuery(query, botInterface);
-			while (resultset.next()) {
-				User user = BotsHandler.getUser(resultset.getLong("userId"), botInterface);
+		final String query = "SELECT * FROM `users_followedgames`;";
+		try (Connection con = DatabaseHandler.getConnection(botInterface);
+			 ResultSet RS = DatabaseHandler.executeQuery(query, con)) {
+			while (RS.next()) {
+				User user = BotsHandler.getUser(RS.getLong("userId"), botInterface);
 				if (user != null) {
-					user.getFollowedGamesUid().add(resultset.getString("gameUid"));
+					user.getFollowedGamesUid().add(RS.getString("gameUid"));
 					i++;
 				}
 			}
-			DatabaseHandler.closeResultSet(resultset);
 			Main.printNewEvent(i + " user(s) followed games loaded from database", false, botInterface);
 		} catch (final SQLException e) {
 			e.printStackTrace();
@@ -50,11 +78,10 @@ public class DatabaseHandler {
 	
 	public synchronized static void addUser(long userId, BotInterfaces botInterface) {
 		final String query = "INSERT INTO `users` VALUES (?);";
-		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
+		try (Connection con = DatabaseHandler.getConnection(botInterface);
+			 PreparedStatement p = DatabaseHandler.newTransact(query, con)) {
 			p.setLong(1, userId);
-			p.execute();
-			DatabaseHandler.closePreparedStatement(p);
+			p.executeUpdate();
 		} catch (final SQLException e) {
 			System.err.println("SQL Exception " + e.getMessage());
 		}
@@ -62,12 +89,11 @@ public class DatabaseHandler {
 	
 	public synchronized static void addUserFollowedGame(long userId, String gameId, BotInterfaces botInterface) {
 		final String query = "INSERT INTO `users_followedgames` VALUES (?,?);";
-		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
+		try (Connection con = DatabaseHandler.getConnection(botInterface);
+			 PreparedStatement p = DatabaseHandler.newTransact(query, con)) {
 			p.setLong(1, userId);
 			p.setString(2, gameId);
-			p.execute();
-			DatabaseHandler.closePreparedStatement(p);
+			p.executeUpdate();
 		} catch (final SQLException e) {
 			System.err.println("SQL Exception " + e.getMessage());
 		}
@@ -75,92 +101,34 @@ public class DatabaseHandler {
 	
 	public synchronized static void deleteUserFollowedGame(long userId, String gameId, BotInterfaces botInterface) {
 		final String query = "DELETE FROM `users_followedgames` WHERE userId = ? AND gameUid = ?";
-		try {
-			final PreparedStatement p = DatabaseHandler.newTransact(query, botInterface);
+		try (Connection con = DatabaseHandler.getConnection(botInterface);
+			 PreparedStatement p = DatabaseHandler.newTransact(query, con)) {
 			p.setLong(1, userId);
 			p.setString(2, gameId);
-			p.execute();
-			DatabaseHandler.closePreparedStatement(p);
-		} catch (final SQLException e) {
-			System.err.println("SQL Exception " + e.getMessage());
-		}
-	}
-	
-	public synchronized static PreparedStatement newTransact(String basequery, BotInterfaces botInterface) throws SQLException {
-		checkConnection(botInterface);
-		return getConnection(botInterface).prepareStatement(basequery);
-	}
-
-	public synchronized static void closePreparedStatement(PreparedStatement p) {
-		try {
-			p.clearParameters();
-			p.close();
+			p.executeUpdate();
 		} catch (final SQLException e) {
 			System.err.println("SQL Exception " + e.getMessage());
 		}
 	}
 
-	public synchronized static void closeResultSet(ResultSet resultset) {
-		try {
-			resultset.getStatement().close();
-			resultset.close();
-		} catch (final SQLException e) {
-			System.err.println("SQL Exception " + e.getMessage());
-		}
+	private static PreparedStatement newTransact(String baseQuery, Connection con) throws SQLException
+	{
+		return con.prepareStatement(baseQuery);
+	}
+
+	private static PreparedStatement newTransactWithKeys(String baseQuery, Connection con) throws SQLException
+	{
+		return con.prepareStatement(baseQuery, Statement.RETURN_GENERATED_KEYS);
+	}
+
+	private static ResultSet executeQuery(String query, Connection con) throws SQLException
+	{
+		Statement stat = con.createStatement();
+		stat.setQueryTimeout(60);
+		return stat.executeQuery(query);
 	}
 	
-	public synchronized static ResultSet executeQuery(String query, BotInterfaces botInterface) {
-		checkConnection(botInterface);
-		try {
-			Statement stat = getConnection(botInterface).createStatement();
-			final ResultSet resultSet = stat.executeQuery(query);
-			stat.setQueryTimeout(20);
-			return resultSet;
-		} catch (SQLException e) {
-			System.err.println("SQLException " + e.getMessage());
-		}
-		return null;
-	}
-	
-	public synchronized static void checkConnection(BotInterfaces botInterface) {
-		while (true) {
-			try {
-				if (!getConnection(botInterface).isValid(1000)) throw new SQLException();
-			} catch (SQLException e1) {
-				Main.printNewEvent("Database connection has been lost, auto reconnecting in 1s", false, botInterface);
-				try {
-					Thread.sleep(1000);
-					if (!setUpConnexion(botInterface)) { // Reconnect
-						// Failed
-						continue;
-					}
-				} catch (InterruptedException e2) {
-					e2.printStackTrace();
-				}
-			}
-			break;
-		}
-	}
-	
-	public synchronized static boolean setUpConnexion(final BotInterfaces botInterface) {
-		try {
-			final String dbName = botInterface == BotInterfaces.DISCORD ? Config.dbNameDiscord : Config.dbNameTelegram;
-			final Connection connection = DriverManager.getConnection("jdbc:mysql://" + Config.dbHost + "/" + dbName, Config.dbUser, Config.dbPass);
-			connection.setAutoCommit(true);
-			if (!connection.isValid(1000)) {
-				Main.printNewEvent("Connection to the database : failed (invalid)", false, botInterface);
-				return false;
-			}
-			connections.put(botInterface, connection);
-			Main.printNewEvent("Connection to the database : ok", false, botInterface);
-			return true;
-		} catch (final SQLException e) {
-			Main.printNewEvent("Connection to the database : failed (" + e.getMessage() + ")", false, botInterface);
-			return false;
-		}
-	}
-	
-	public static Connection getConnection(BotInterfaces botInterface) {
-		return connections.get(botInterface);
+	private static Connection getConnection(BotInterfaces botInterface) throws SQLException {
+		return DATA_SOURCES.get(botInterface).getConnection();
 	}
 }

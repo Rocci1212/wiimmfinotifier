@@ -9,7 +9,11 @@ public class Config {
 	public static String discordBotToken = "";
 	public static String telegramBotToken = "";
 	// Database
-	public static String dbNameTelegram = "", dbNameDiscord = "", dbHost = "127.0.0.1", dbUser = "root", dbPass = "";
+	public static String DBDriverClassName = "";
+	public static String DBBaseJDBCUrl = "";
+	public static int DBConnectionSecondsTtl;
+	public static int DBPort;
+	public static String DBNameTelegram = "", DBNameDiscord = "", DBHost = "127.0.0.1", DBUser = "root", DBPass = "";
 	// Parsing
 	public static int gamesListParsingSecondsInterval = 60;
 	public static String wiimmfiBaseUrl = null;
@@ -62,15 +66,23 @@ public class Config {
 				} else if (param.equalsIgnoreCase("BOT_TOKEN_TELEGRAM")) {
 					Config.telegramBotToken = value;
 				} else if (param.equalsIgnoreCase("DB_NAME_DISCORD")) {
-					Config.dbNameDiscord = value;
+					Config.DBNameDiscord = value;
 				} else if (param.equalsIgnoreCase("DB_NAME_TELEGRAM")) {
-					Config.dbNameTelegram = value;
+					Config.DBNameTelegram = value;
+				} else if (param.equalsIgnoreCase("DB_DRIVER_CLASSNAME")) {
+					Config.DBDriverClassName = value;
+				} else if (param.equalsIgnoreCase("DB_BASE_JDBC_URL")) {
+					Config.DBBaseJDBCUrl = value;
 				} else if (param.equalsIgnoreCase("DB_HOST")) {
-					Config.dbHost = value;
+					Config.DBHost = value;
+				} else if (param.equalsIgnoreCase("DB_PORT")) {
+					Config.DBPort = Integer.parseInt(value);
 				} else if (param.equalsIgnoreCase("DB_USER")) {
-					Config.dbUser = value;
+					Config.DBUser = value;
 				} else if (param.equalsIgnoreCase("DB_PASS")) {
-					Config.dbPass = value == null ? "" : value;
+					Config.DBPass = value == null ? "" : value;
+				} else if (param.equalsIgnoreCase("DB_CONNECTION_SECONDS_TTL")) {
+					Config.DBConnectionSecondsTtl = Integer.parseInt(value);
 				} else if (param.equalsIgnoreCase("WIIMMFI_BASE_URL")) {
 					Config.wiimmfiBaseUrl = value;
 				} else if (param.equalsIgnoreCase("WIIMMFI_FULLGAMESLIST_PATH")) {
@@ -99,7 +111,7 @@ public class Config {
 					}
 					Config.wiimmfiWIIWARETypeImagePath = value;
 			}
-			if (Config.dbNameDiscord == null || Config.dbNameTelegram == null || Config.dbHost == null || Config.dbPass == null || Config.dbUser == null) {
+			if (Config.DBNameDiscord == null || Config.DBNameTelegram == null || Config.DBHost == null || Config.DBPass == null || Config.DBUser == null || Config.DBDriverClassName == null || Config.DBBaseJDBCUrl == null) {
 				throw new Exception();
 			}
 		}

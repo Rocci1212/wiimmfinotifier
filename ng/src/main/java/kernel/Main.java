@@ -28,11 +28,7 @@ public class Main {
 		}
 		for (final BotInterfaces botInterface : BotInterfaces.values()) {
 			Main.printNewEvent("Load " + botInterface.toString() + " bot interface database", false);
-			if (DatabaseHandler.setUpConnexion(botInterface)) {
-
-			} else {
-				System.exit(1);
-			}
+			DatabaseHandler.initBotInterfaceDataSource(botInterface);
 			DatabaseHandler.loadUsers(botInterface);
 			DatabaseHandler.loadUsersFollowedGames(botInterface);
 		}
