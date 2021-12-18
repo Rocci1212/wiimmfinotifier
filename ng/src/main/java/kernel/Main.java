@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit;
 import exceptions.FlareSolverrException;
 import handlers.BotsHandler;
 import handlers.DatabaseHandler;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.io.IoBuilder;
 import utils.Stats;
 import wiimmfi.FlareSolverrGatewayManager;
 import wiimmfi.GamesListParser;
@@ -26,6 +29,7 @@ public class Main {
 			Main.printNewEvent("Configuration file loading failed", false);
 			System.exit(1);
 		}
+		configureLog4j2();
 		for (final BotInterfaces botInterface : BotInterfaces.values()) {
 			Main.printNewEvent("Load " + botInterface.toString() + " bot interface database", false);
 			DatabaseHandler.initBotInterfaceDataSource(botInterface);
@@ -53,6 +57,14 @@ public class Main {
 		System.out.print(Main.version + "\n");
 		System.out.print("			by Azlino\n");
 		System.out.print("-------------------------------------------------------------------------------\n\n");
+	}
+
+	private static void configureLog4j2() {
+		System.setProperty("logsPath", "logs");
+		System.setProperty("log4j.configurationFile", "log4j2.properties");
+		// On transfert tout vers les loggers
+		System.setErr(IoBuilder.forLogger(LogManager.getLogger("STDERR")).setLevel(Level.ERROR).buildPrintStream());
+		System.setOut(IoBuilder.forLogger(LogManager.getLogger("STDOUT")).setLevel(Level.INFO).buildPrintStream());
 	}
 	
 	public static String getUptime() {
